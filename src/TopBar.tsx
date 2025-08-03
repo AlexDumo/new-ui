@@ -1,13 +1,15 @@
-import { RectangleIcon, PolygonIcon } from "@phosphor-icons/react";
+import { RectangleIcon, PolygonIcon, HandIcon } from "@phosphor-icons/react";
 import { useViewerStore } from "./stores/viewerStore";
 import { useCallback, useEffect, useState } from "react";
 import clsx from "clsx";
+import { enableMoveMode, disableMoveMode } from "./lib/annotatorUtils";
 
 type DrawingTool = "rectangle" | "polygon";
 
 const TopBar = () => {
   const { annotatorRef } = useViewerStore();
   const [activeTool, setActiveTool] = useState<DrawingTool | undefined>();
+  const [isMoveMode, setIsMoveMode] = useState(false);
 
   useEffect(() => {
     if (annotatorRef) {
@@ -18,13 +20,19 @@ const TopBar = () => {
   const handleToolChange = useCallback(
     (tool: DrawingTool) => {
       if (annotatorRef) {
+        // Disable move mode and return to drawing mode
+        if (isMoveMode) {
+          disableMoveMode(annotatorRef);
+          setIsMoveMode(false);
+        }
+
         annotatorRef.setDrawingTool(tool);
         setActiveTool(annotatorRef.getDrawingTool() as DrawingTool);
       } else {
         console.error("Annotator not found");
       }
     },
-    [annotatorRef],
+    [annotatorRef, isMoveMode],
   );
 
   const handleRectangleClick = useCallback(
@@ -35,6 +43,20 @@ const TopBar = () => {
     () => handleToolChange("polygon"),
     [handleToolChange],
   );
+
+  const handleMoveModeToggle = useCallback(() => {
+    if (annotatorRef) {
+      if (isMoveMode) {
+        disableMoveMode(annotatorRef);
+        setIsMoveMode(false);
+      } else {
+        enableMoveMode(annotatorRef);
+        setIsMoveMode(true);
+      }
+    } else {
+      console.error("Annotator not found");
+    }
+  }, [annotatorRef, isMoveMode]);
 
   const getButtonClasses = useCallback(
     (tool: DrawingTool) => {
@@ -70,6 +92,22 @@ const TopBar = () => {
         >
           <PolygonIcon size={16} />
           <span>Polygon</span>
+        </button>
+
+        <div className="w-px h-6 bg-gray-300 mx-2" />
+
+        <button
+          onClick={handleMoveModeToggle}
+          className={clsx(
+            "flex items-center space-x-2 px-3 py-2 text-sm font-medium border rounded-md transition-colors",
+            "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+            isMoveMode
+              ? "text-white bg-green-600 border-green-600 hover:bg-green-700 hover:border-green-700"
+              : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50 hover:border-gray-400",
+          )}
+        >
+          <HandIcon size={16} />
+          <span>Move Mode</span>
         </button>
       </div>
     </div>
