@@ -69,7 +69,7 @@ export default function Viewer() {
             fillOpacity: 0.0001,
           },
         });
-        newAnnotatorRef.setDrawingTool("polygon");
+        newAnnotatorRef.setDrawingTool("rectangle");
         newAnnotatorRef.on("createAnnotation", function (annotation) {
           console.log("created", annotation);
         });
