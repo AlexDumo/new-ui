@@ -3,14 +3,17 @@ import OpenSeadragon from "openseadragon";
 import { enableGeoTIFFTileSource } from "geotiff-tilesource";
 import { useQuery } from "@tanstack/react-query";
 import "@annotorious/openseadragon/annotorious-openseadragon.css";
-import { createOSDAnnotator } from "@annotorious/openseadragon";
+import {
+  createOSDAnnotator,
+  type OpenSeadragonAnnotator,
+} from "@annotorious/openseadragon";
 
 enableGeoTIFFTileSource(OpenSeadragon);
 
 export default function Viewer() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const annotatorRef = useRef<any>(null);
+  const annotatorRef = useRef<OpenSeadragonAnnotator | null>(null);
 
   const tileQuery = useQuery({
     queryKey: ["tiles"],
@@ -63,7 +66,7 @@ export default function Viewer() {
           },
         });
         annotatorRef.current.setDrawingTool("polygon");
-        annotatorRef.current.on("createAnnotation", function (annotation: any) {
+        annotatorRef.current.on("createAnnotation", function (annotation) {
           console.log("created", annotation);
         });
 
