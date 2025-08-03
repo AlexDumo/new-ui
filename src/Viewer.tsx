@@ -2,12 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import OpenSeadragon from "openseadragon";
 import { enableGeoTIFFTileSource } from "geotiff-tilesource";
 import { useQuery } from "@tanstack/react-query";
+import "@annotorious/openseadragon/annotorious-openseadragon.css";
+import { createOSDAnnotator } from "@annotorious/openseadragon";
 
 enableGeoTIFFTileSource(OpenSeadragon);
 
 export default function Viewer() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const annotatorRef = useRef<any>(null);
 
   const tileQuery = useQuery({
     queryKey: ["tiles"],
@@ -47,9 +50,21 @@ export default function Viewer() {
           navigatorPosition: "BOTTOM_RIGHT",
           showRotationControl: true,
           gestureSettingsMouse: {
-            clickToZoom: true,
-            dblClickToZoom: true,
+            clickToZoom: false,
+            dblClickToZoom: false,
           },
+        });
+
+        annotatorRef.current = createOSDAnnotator(osdRef.current, {
+          drawingEnabled: true,
+          style: {
+            fill: "#ff0000",
+            fillOpacity: 0.25,
+          },
+        });
+        annotatorRef.current.setDrawingTool("polygon");
+        annotatorRef.current.on("createAnnotation", function (annotation: any) {
+          console.log("created", annotation);
         });
 
         osdRef.current.addHandler("open", () => {
@@ -76,6 +91,10 @@ export default function Viewer() {
       if (osdRef.current) {
         osdRef.current.destroy();
         osdRef.current = null;
+      }
+      if (annotatorRef.current) {
+        annotatorRef.current.destroy();
+        annotatorRef.current = null;
       }
     };
   }, [tileQuery.data, tileQuery.isSuccess]);

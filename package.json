@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@annotorious/annotorious": "^3.6.8",
+    "@annotorious/openseadragon": "^3.6.8",
     "@tanstack/react-query": "^5.84.1",
     "geotiff-tilesource": "^2.2.0",
     "openseadragon": "^5.0.1",
