@@ -58,8 +58,8 @@ export default function Viewer() {
         annotatorRef.current = createOSDAnnotator(osdRef.current, {
           drawingEnabled: true,
           style: {
-            fill: "#ff0000",
-            fillOpacity: 0.25,
+            fill: "#0000ff",
+            fillOpacity: 0.0001,
           },
         });
         annotatorRef.current.setDrawingTool("polygon");
