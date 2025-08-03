@@ -1,19 +1,26 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import OpenSeadragon from "openseadragon";
 import { enableGeoTIFFTileSource } from "geotiff-tilesource";
 import { useQuery } from "@tanstack/react-query";
 import "@annotorious/openseadragon/annotorious-openseadragon.css";
-import {
-  createOSDAnnotator,
-  type OpenSeadragonAnnotator,
-} from "@annotorious/openseadragon";
+import { createOSDAnnotator } from "@annotorious/openseadragon";
+import { useViewerStore } from "./stores/viewerStore";
 
 enableGeoTIFFTileSource(OpenSeadragon);
 
 export default function Viewer() {
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const annotatorRef = useRef<OpenSeadragonAnnotator | null>(null);
+  const {
+    osdRef,
+    isLoading,
+    error,
+    setOsdRef,
+    setAnnotatorRef,
+    setIsLoading,
+    setError,
+    cleanup,
+  } = useViewerStore();
+
+  const viewerElementRef = useRef<HTMLDivElement>(null);
 
   const tileQuery = useQuery({
     queryKey: ["tiles"],
@@ -34,20 +41,17 @@ export default function Viewer() {
     retry: 1,
   });
 
-  const viewerRef = useRef<HTMLDivElement>(null);
-  const osdRef = useRef<OpenSeadragon.Viewer | null>(null);
-
   useEffect(() => {
     if (
-      viewerRef.current &&
-      !osdRef.current &&
+      viewerElementRef.current &&
+      !osdRef &&
       tileQuery.isSuccess &&
       tileQuery.data
     ) {
       try {
         console.log("Initializing OpenSeaDragon viewer...");
-        osdRef.current = OpenSeadragon({
-          element: viewerRef.current,
+        const newOsdRef = OpenSeadragon({
+          element: viewerElementRef.current,
           tileSources: tileQuery.data,
           showNavigator: true,
           navigatorPosition: "BOTTOM_RIGHT",
@@ -58,28 +62,32 @@ export default function Viewer() {
           },
         });
 
-        annotatorRef.current = createOSDAnnotator(osdRef.current, {
+        const newAnnotatorRef = createOSDAnnotator(newOsdRef, {
           drawingEnabled: true,
           style: {
             fill: "#0000ff",
             fillOpacity: 0.0001,
           },
         });
-        annotatorRef.current.setDrawingTool("polygon");
-        annotatorRef.current.on("createAnnotation", function (annotation) {
+        newAnnotatorRef.setDrawingTool("polygon");
+        newAnnotatorRef.on("createAnnotation", function (annotation) {
           console.log("created", annotation);
         });
 
-        osdRef.current.addHandler("open", () => {
+        // Store refs in Zustand store
+        setOsdRef(newOsdRef);
+        setAnnotatorRef(newAnnotatorRef);
+
+        newOsdRef.addHandler("open", () => {
           console.log("OpenSeaDragon viewer opened successfully");
           setIsLoading(false);
         });
 
-        osdRef.current.addHandler("tile-loaded", () => {
+        newOsdRef.addHandler("tile-loaded", () => {
           console.log("Tile loaded");
         });
 
-        osdRef.current.addHandler("tile-load-failed", (event) => {
+        newOsdRef.addHandler("tile-load-failed", (event) => {
           console.error("Tile load failed:", event);
           setError("Failed to load image tiles");
         });
@@ -91,16 +99,18 @@ export default function Viewer() {
     }
 
     return () => {
-      if (osdRef.current) {
-        osdRef.current.destroy();
-        osdRef.current = null;
-      }
-      if (annotatorRef.current) {
-        annotatorRef.current.destroy();
-        annotatorRef.current = null;
-      }
+      cleanup();
     };
-  }, [tileQuery.data, tileQuery.isSuccess]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    tileQuery.data,
+    tileQuery.isSuccess,
+    setOsdRef,
+    setAnnotatorRef,
+    setIsLoading,
+    setError,
+    cleanup,
+  ]);
 
   if (tileQuery.isError) {
     return (
@@ -123,7 +133,7 @@ export default function Viewer() {
   return (
     <div style={{ width: "100%", height: "100vh", position: "relative" }}>
       <div
-        ref={viewerRef}
+        ref={viewerElementRef}
         style={{
           width: "100%",
           height: "100%",
