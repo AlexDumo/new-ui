@@ -23,7 +23,5 @@ dist-ssr
 *.sln
 *.sw?
 
-# Large files
+# Large files (handled by Git LFS)
 public/TCI.tif
-*.tif
-*.tiff
